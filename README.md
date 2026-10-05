@@ -1,4 +1,4 @@
-# CineData Agent
+  # CineData Agent
 
 Agente de **Text-to-SQL** para a camada Gold da CineData Analytics. Quem não sabe SQL pergunta em português
 ("Top 10 filmes com maior receita em R$") e o agente consulta o banco, em modo somente leitura, e responde
@@ -20,8 +20,8 @@ Os comandos abaixo funcionam no PowerShell ou no Git Bash do VS Code. Onde muda,
 ### 1. Clonar e criar o ambiente virtual
 
 ```bash
-git clone <URL_DO_SEU_REPOSITORIO>
-cd cinedata-agent
+git clone <https://github.com/juliatenoriocalado/cinedata_agent.git>
+cd cinedata_agent
 python -m venv .venv
 ```
 
@@ -155,20 +155,26 @@ de o modelo lembrar de todos eles, as regras ficam em **views temporárias** cri
 
 ---
 
-## Avaliação
+### Resultado da última execução (05/10/2026)
 
-O projeto tem 14 perguntas do enunciado com **SQL de referência escrita à mão** (`evals/golden.py`).
+Modelo: `nvidia/nemotron-3-super-120b-a12b:free`. Critério automático: o topo do ranking da referência aparece na resposta do agente.
 
-```bash
-python -m evals.check_golden          # roda as 14 SQLs de referência direto no banco. NÃO usa a API
-python -m evals.run_agent_eval        # compara o agente com a referência. GASTA requisições (padrão: 3 perguntas)
-python -m evals.run_agent_eval --ids pop_top5 fin_top10_receita
-python -m evals.run_agent_eval --all  # as 14; pode passar de 40 requisições
-```
+| Pergunta | Resultado |
+|---|---|
+| Top 10 filmes com maior receita em R$ | OK (conferido à mão) |
+| Os 5 filmes mais populares | OK |
+| Lucro médio por gênero | OK |
+| Divergência entre nota TMDB e IMDb | OK |
+| Ator com mais filmes nos últimos 5 anos | OK |
+| Diretores com maior nota média | OK (9 dos 10 nomes da referência) |
+| Dupla ator-diretor | OK |
+| Produtora com maior lucro total | OK |
+| Gênero com maior margem média | OK |
+| Filmes mais avaliados pelos usuários | OK |
 
-`check_golden` gera `evals/golden_report.md` com o resultado esperado de cada pergunta, para revisão humana.
-`run_agent_eval` marca `OK` quando ≥ 80% das entidades da referência aparecem na resposta do agente e `REVISAR` caso
-contrário. É um apoio, não uma nota: `REVISAR` pode ser erro do agente ou só uma interpretação diferente.
+Não testadas com o agente por causa do limite de 50 requisições por dia: maior margem de lucro por filme, nota IMDb por ano, quantidade de filmes por gênero e divergência entre usuários e IMDb. As SQLs de referência dessas quatro rodam (`python -m evals.check_golden`), mas o agente não foi avaliado nelas.
+
+O `OK` automático não avalia o texto da resposta. Na primeira rodada, 3 de 5 perguntas ficaram em `REVISAR`: duas por falha do avaliador (perguntas no singular) e uma por erro do agente (dupla ator-diretor). Os dois problemas foram corrigidos e as 3 passaram depois.
 
 ## Testes
 
