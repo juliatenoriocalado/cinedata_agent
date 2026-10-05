@@ -197,3 +197,29 @@ def test_cache_is_skipped_when_conversation_has_history(conn, tmp_path):
 
 def test_normalize_question():
     assert normalize_question("  Top 10   Filmes?? ") == normalize_question("top 10 filmes")
+
+
+@needs_db
+def test_empty_result_gets_a_warning_for_the_model(conn):
+    sdk = FakeSDK([reply(sql="SELECT titulo FROM v_filmes WHERE 1 = 0"), reply(content="ok")])
+    agent = CineDataAgent(settings(), llm=OpenRouterClient(settings(), client=sdk), conn=conn)
+    agent.ask("teste")
+    tool_msg = json.loads(sdk.calls[1]["messages"][-1]["content"])
+    assert tool_msg["row_count"] == 0 and "0 linhas" in tool_msg["aviso"]
+
+
+@needs_db
+def test_fallback_with_only_empty_results_is_honest(conn):
+    script = [reply(sql="SELECT 1 WHERE 0", call_id=f"c{i}") for i in range(4)]
+    agent = CineDataAgent(settings(), llm=OpenRouterClient(settings(), client=FakeSDK(script)), conn=conn)
+    result = agent.ask("loop")
+    assert "nenhuma retornou linhas" in result.answer and "Resultado bruto" not in result.answer
+
+
+def test_entity_overlap_compares_only_the_top_returned():
+    from evals.run_agent_eval import entity_overlap
+
+    reference = [("Horror", 1), ("Adventure", 2), ("Drama", 3)]
+    assert entity_overlap(reference, [["Horror", 1]]) == 1.0  # pergunta singular: 1 linha, e é a 1ª
+    assert entity_overlap(reference, [["War", 1]]) == 0.0
+    assert entity_overlap(reference, []) == 0.0
