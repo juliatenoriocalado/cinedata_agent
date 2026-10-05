@@ -1,4 +1,4 @@
-  # CineData Agent
+# CineData Agent
 
 Agente de **Text-to-SQL** para a camada Gold da CineData Analytics. Quem não sabe SQL pergunta em português
 ("Top 10 filmes com maior receita em R$") e o agente consulta o banco, em modo somente leitura, e responde
@@ -20,7 +20,7 @@ Os comandos abaixo funcionam no PowerShell ou no Git Bash do VS Code. Onde muda,
 ### 1. Clonar e criar o ambiente virtual
 
 ```bash
-git clone <https://github.com/juliatenoriocalado/cinedata_agent.git>
+git clone https://github.com/juliatenoriocalado/cinedata_agent.git
 cd cinedata_agent
 python -m venv .venv
 ```
@@ -155,6 +155,20 @@ de o modelo lembrar de todos eles, as regras ficam em **views temporárias** cri
 
 ---
 
+## Avaliação
+
+O projeto tem 14 perguntas do enunciado com **SQL de referência escrita à mão** (`evals/golden.py`).
+
+```bash
+python -m evals.check_golden          # roda as 14 SQLs de referência direto no banco. NÃO usa a API
+python -m evals.run_agent_eval        # compara o agente com a referência. GASTA requisições (padrão: 3 perguntas)
+python -m evals.run_agent_eval --ids pop_top5 fin_top10_receita
+python -m evals.run_agent_eval --all  # as 14; pode passar de 40 requisições
+```
+
+`check_golden` gera `evals/golden_report.md` com o resultado esperado de cada pergunta, para revisão humana.
+`run_agent_eval` marca `OK` quando pelo menos 80% do topo do ranking da referência (do tamanho do que o agente devolveu) aparece na resposta e `REVISAR` caso contrário. É um apoio, não uma nota: `REVISAR` pode ser erro do agente ou só uma interpretação diferente.
+
 ### Resultado da última execução (05/10/2026)
 
 Modelo: `nvidia/nemotron-3-super-120b-a12b:free`. Critério automático: o topo do ranking da referência aparece na resposta do agente.
@@ -175,6 +189,8 @@ Modelo: `nvidia/nemotron-3-super-120b-a12b:free`. Critério automático: o topo 
 Não testadas com o agente por causa do limite de 50 requisições por dia: maior margem de lucro por filme, nota IMDb por ano, quantidade de filmes por gênero e divergência entre usuários e IMDb. As SQLs de referência dessas quatro rodam (`python -m evals.check_golden`), mas o agente não foi avaliado nelas.
 
 O `OK` automático não avalia o texto da resposta. Na primeira rodada, 3 de 5 perguntas ficaram em `REVISAR`: duas por falha do avaliador (perguntas no singular) e uma por erro do agente (dupla ator-diretor). Os dois problemas foram corrigidos e as 3 passaram depois.
+
+---
 
 ## Testes
 
@@ -198,6 +214,8 @@ para depurar, e cada depuração às cegas gasta requisições de uma cota de 50
 views a regra é aplicada sempre e é testável (`tests/test_semantic.py`).
 
 **Esquema no prompt, sem `get_schema`.** Uma requisição a menos por pergunta.
+
+**Ordem dos modelos.** O fallback tenta `nvidia/nemotron-3-super-120b-a12b:free`, `google/gemma-4-31b-it:free`, `nvidia/nemotron-3.5-lightning:free` e `openrouter/free`. O suporte a tool calling dos quatro foi conferido com `python -m cinedata_agent models` em 05/10/2026. Os maiores vêm primeiro por suposição de que geram SQL melhor; essa ordem não foi comparada. Para mudar, use `OPENROUTER_MODELS` no `.env`.
 
 **Temperatura 0.** Mesma pergunta, mesma SQL, o que ajuda a comparar execuções.
 
