@@ -1,0 +1,18 @@
+# Segredos
+.env
+
+# Banco da atividade (581 MB: passa do limite de 100 MB por arquivo do GitHub)
+data/*.db
+data/*.db-*
+*.db-wal
+*.db-shm
+
+# Cache e artefatos
+.cache/
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+.vscode/
+evals/agent_report.md
